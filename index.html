@@ -363,8 +363,10 @@
       }
 
       shuffle(outA); shuffle(outB);
-      const captA = outA.length ? outA[Math.floor(Math.random()*outA.length)] : '';
-      const captB = outB.length ? outB[Math.floor(Math.random()*outB.length)] : '';
+      const captainPoolA = common ? outA.filter(p => p !== common) : outA;
+      const captainPoolB = common ? outB.filter(p => p !== common) : outB;
+      const captA = captainPoolA.length ? captainPoolA[Math.floor(Math.random()*captainPoolA.length)] : '';
+      const captB = captainPoolB.length ? captainPoolB[Math.floor(Math.random()*captainPoolB.length)] : '';
 
       return {
         teamA: outA,

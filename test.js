@@ -118,8 +118,10 @@ function generateTeamsFrom(groups, selectedPlayers) {
   }
 
   shuffle(teamA); shuffle(teamB);
-  const captA = teamA.length? teamA[Math.floor(Math.random()*teamA.length)] : '';
-  const captB = teamB.length? teamB[Math.floor(Math.random()*teamB.length)] : '';
+  const captainPoolA = common ? teamA.filter(p => p !== common) : teamA;
+  const captainPoolB = common ? teamB.filter(p => p !== common) : teamB;
+  const captA = captainPoolA.length ? captainPoolA[Math.floor(Math.random()*captainPoolA.length)] : '';
+  const captB = captainPoolB.length ? captainPoolB[Math.floor(Math.random()*captainPoolB.length)] : '';
   return {
     teamA,
     teamB,
