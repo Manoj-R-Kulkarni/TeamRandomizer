@@ -199,8 +199,19 @@
     .captain {
       color: #0b63c9;
       font-weight: 800;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+    }
+
+    .captain::after {
+      content: "C";
+      display: inline-block;
+      margin-left: 8px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #0b63c9;
+      color: #fff;
+      font-size: 0.7rem;
+      line-height: 1.35;
+      vertical-align: middle;
     }
 
     .common {
@@ -211,12 +222,6 @@
     .toss-wrap {
       display: grid;
       gap: 10px;
-    }
-
-    .toss-controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
     }
 
     .coin-stage {
@@ -310,27 +315,21 @@
         <ul id="teamA"></ul>
       </div>
       <div class="team card">
+        <h3>Team B <span id="captB" class="meta"></span></h3>
+        <ul id="teamB"></ul>
+      </div>
+    </div>
 
     <div class="card" id="tossCard">
       <div class="section-title">Toss</div>
       <div class="toss-wrap">
-        <div class="meta" id="tossInstruction">Generate teams first, then choose Heads or Tails for Team A and start toss.</div>
-
-        <div class="toss-controls">
-          <button class="btn-ghost" id="pickHeads">Team A: Heads</button>
-          <button class="btn-ghost" id="pickTails">Team A: Tails</button>
-        </div>
-
-        <button class="btn-primary" id="startToss">Start Toss (5s)</button>
+        <div class="meta" id="tossInstruction">Generate teams first, then tap Flip Coin.</div>
+        <button class="btn-primary" id="startToss">Flip Coin (5s)</button>
 
         <div class="coin-stage">
           <div class="coin" id="coinFace">-</div>
           <div class="toss-meta" id="tossStatus" style="margin-top:8px">Waiting for toss</div>
         </div>
-      </div>
-    </div>
-        <h3>Team B <span id="captB" class="meta"></span></h3>
-        <ul id="teamB"></ul>
       </div>
     </div>
 
@@ -629,34 +628,17 @@
 
       // Enable toss only after teams exist.
       window._tossReady = true;
-      document.getElementById('tossInstruction').textContent = 'Pick Heads/Tails for Team A and start toss. Team B gets the opposite side.';
+      document.getElementById('tossInstruction').textContent = 'Teams ready. Tap Flip Coin to toss.';
     }
 
     function initToss() {
-      const pickHeads = document.getElementById('pickHeads');
-      const pickTails = document.getElementById('pickTails');
       const startToss = document.getElementById('startToss');
       const coinFace = document.getElementById('coinFace');
       const tossStatus = document.getElementById('tossStatus');
 
-      window._teamAChoice = null;
       window._tossReady = false;
       window._tossRunning = false;
       window._tossTimer = null;
-
-      function setChoice(side) {
-        window._teamAChoice = side;
-        if (side === 'heads') {
-          pickHeads.className = 'btn-primary';
-          pickTails.className = 'btn-ghost';
-        } else {
-          pickHeads.className = 'btn-ghost';
-          pickTails.className = 'btn-primary';
-        }
-      }
-
-      pickHeads.addEventListener('click', () => setChoice('heads'));
-      pickTails.addEventListener('click', () => setChoice('tails'));
 
       startToss.addEventListener('click', () => {
         if (!window._tossReady) {
@@ -665,14 +647,7 @@
         }
         if (window._tossRunning) return;
 
-        if (!window._teamAChoice) {
-          // default if user skipped choosing a side
-          setChoice(Math.random() < 0.5 ? 'heads' : 'tails');
-        }
-
         window._tossRunning = true;
-        pickHeads.disabled = true;
-        pickTails.disabled = true;
         startToss.disabled = true;
 
         let left = 5;
@@ -694,16 +669,9 @@
           coinFace.classList.remove('flipping');
           coinFace.textContent = result;
 
-          const teamAWin = window._teamAChoice === result;
-          const winner = teamAWin ? 'Team A' : 'Team B';
-          const teamASide = window._teamAChoice;
-          const teamBSide = teamASide === 'heads' ? 'tails' : 'heads';
-
-          tossStatus.textContent = `Result: ${result.toUpperCase()} | Team A: ${teamASide.toUpperCase()} | Team B: ${teamBSide.toUpperCase()} | Winner: ${winner}`;
+          tossStatus.textContent = `Result: ${result.toUpperCase()}`;
 
           window._tossRunning = false;
-          pickHeads.disabled = false;
-          pickTails.disabled = false;
           startToss.disabled = false;
         }, 1000);
       });
