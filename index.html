@@ -336,7 +336,7 @@
       <div class="section-title">Toss</div>
       <div class="toss-wrap">
         <div class="meta" id="tossInstruction">Generate teams first, then tap Flip Coin.</div>
-        <button class="btn-primary" id="startToss">Flip Coin (5s)</button>
+        <button class="btn-primary" id="startToss">Flip Coin (4s)</button>
 
         <div class="coin-stage">
           <div class="coin" id="coinFace">-</div>
@@ -680,7 +680,7 @@
         window._tossRunning = true;
         startToss.disabled = true;
 
-        let left = 5;
+        let left = 4;
         coinFace.classList.add('flipping');
         coinFace.textContent = 'Flip';
         tossStatus.textContent = `Choose locked. Tossing in ${left}s...`;
