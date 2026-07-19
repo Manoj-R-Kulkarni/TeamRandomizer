@@ -18,24 +18,6 @@ function generateTeamsFrom(groups, selectedPlayers) {
     });
   });
 
-  const buckets = new Map();
-  selectedPlayers.forEach(p=>{
-    const info = playerInfo.get(p) || {group:'__ungrouped', weight:1};
-    if (!buckets.has(info.group)) buckets.set(info.group, []);
-    buckets.get(info.group).push({name:p, weight: info.weight});
-  });
-
-  const groupsArr = Array.from(buckets.entries());
-  const choicesPerGroup = groupsArr.map(([g, players]) => {
-    const s = players.length;
-    const k1 = Math.floor(s/2);
-    const k2 = s - k1;
-    const sizes = (k1===k2) ? [k1] : [k1, k2];
-    return {group: g, players, sizes};
-  });
-
-  let bestScore = Infinity;
-  const bestCandidates = [];
   function combinations(arr, k) {
     const res = [];
     function rec(start, chosen) {
@@ -46,51 +28,106 @@ function generateTeamsFrom(groups, selectedPlayers) {
     return res;
   }
 
-  function search(idx, teamA, teamB, weightA, weightB) {
-    if (idx===choicesPerGroup.length) {
-      const weightDiff = Math.abs(weightA - weightB);
-      const sizeDiff = Math.abs(teamA.length - teamB.length);
-      const score = (weightDiff * 1000) + sizeDiff;
-      if (score < bestScore) {
-        bestScore = score;
-        bestCandidates.length = 0;
-        bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff});
-      } else if (score === bestScore) {
-        bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff});
+  function solvePool(poolNames) {
+    const buckets = new Map();
+    poolNames.forEach(p=>{
+      const info = playerInfo.get(p) || {group:'__ungrouped', weight:1};
+      if (!buckets.has(info.group)) buckets.set(info.group, []);
+      buckets.get(info.group).push({name:p, weight: info.weight});
+    });
+
+    const choicesPerGroup = Array.from(buckets.entries()).map(([g, players]) => {
+      const s = players.length;
+      const k1 = Math.floor(s/2);
+      const k2 = s - k1;
+      const sizes = (k1===k2) ? [k1] : [k1, k2];
+      return {group: g, players, sizes};
+    });
+
+    let bestScore = Infinity;
+    const bestCandidates = [];
+
+    function search(idx, teamA, teamB, weightA, weightB) {
+      if (idx===choicesPerGroup.length) {
+        const weightDiff = Math.abs(weightA - weightB);
+        const sizeDiff = Math.abs(teamA.length - teamB.length);
+        const score = (weightDiff * 1000) + sizeDiff;
+        if (score < bestScore) {
+          bestScore = score;
+          bestCandidates.length = 0;
+          bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff, score});
+        } else if (score === bestScore) {
+          bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff, score});
+        }
+        return;
       }
-      return;
-    }
-    const {players, sizes} = choicesPerGroup[idx];
-    for (const size of sizes) {
-      const combs = combinations(players, size);
-      for (const comb of combs) {
-        const namesA = comb.map(x=>x.name);
-        const namesB = players.filter(p=>!namesA.includes(p.name)).map(x=>x.name);
-        const wA = comb.reduce((s,p)=>s+(p.weight||1),0);
-        const wB = players.reduce((s,p)=>s+(p.weight||1),0) - wA;
-        teamA.push(...namesA);
-        teamB.push(...namesB);
-        search(idx+1, teamA, teamB, weightA + wA, weightB + wB);
-        teamA.splice(teamA.length - namesA.length, namesA.length);
-        teamB.splice(teamB.length - namesB.length, namesB.length);
+
+      const {players, sizes} = choicesPerGroup[idx];
+      for (const size of sizes) {
+        const combs = combinations(players, size);
+        for (const comb of combs) {
+          const namesASet = new Set(comb.map(x=>x.name));
+          const namesA = Array.from(namesASet);
+          const namesB = players.filter(p=>!namesASet.has(p.name)).map(x=>x.name);
+          const wA = comb.reduce((s,p)=>s+(p.weight||1),0);
+          const wB = players.reduce((s,p)=>s+(p.weight||1),0) - wA;
+
+          teamA.push(...namesA);
+          teamB.push(...namesB);
+          search(idx+1, teamA, teamB, weightA + wA, weightB + wB);
+          teamA.splice(teamA.length - namesA.length, namesA.length);
+          teamB.splice(teamB.length - namesB.length, namesB.length);
+        }
       }
     }
+
+    search(0, [], [], 0, 0);
+    if (!bestCandidates.length) return null;
+    return bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
   }
 
-  search(0, [], [], 0, 0);
-  if (!bestCandidates.length) return {teamA:[], teamB:[], captA:'', captB:'', common:null};
-  const picked = bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
-  shuffle(picked.teamA); shuffle(picked.teamB);
-  const captA = picked.teamA.length? picked.teamA[Math.floor(Math.random()*picked.teamA.length)] : '';
-  const captB = picked.teamB.length? picked.teamB[Math.floor(Math.random()*picked.teamB.length)] : '';
+  const pool = Array.from(new Set(selectedPlayers));
+  if (!pool.length) return {teamA:[], teamB:[], captA:'', captB:'', common:null, weights:{a:0,b:0,diff:0}, sizeDiff:0};
+
+  let picked;
+  let common = null;
+  if (pool.length % 2 === 1) {
+    const candidateSolutions = [];
+    for (const candidate of pool) {
+      const reduced = pool.filter(p=>p!==candidate);
+      const solved = solvePool(reduced);
+      if (!solved) continue;
+      candidateSolutions.push({common: candidate, solved, score: solved.score});
+    }
+    if (!candidateSolutions.length) return {teamA:[], teamB:[], captA:'', captB:'', common:null, weights:{a:0,b:0,diff:0}, sizeDiff:0};
+    const bestScore = Math.min(...candidateSolutions.map(x=>x.score));
+    const best = candidateSolutions.filter(x=>x.score===bestScore);
+    const chosen = best[Math.floor(Math.random() * best.length)];
+    picked = chosen.solved;
+    common = chosen.common;
+  } else {
+    picked = solvePool(pool);
+    if (!picked) return {teamA:[], teamB:[], captA:'', captB:'', common:null, weights:{a:0,b:0,diff:0}, sizeDiff:0};
+  }
+
+  const teamA = picked.teamA.slice();
+  const teamB = picked.teamB.slice();
+  if (common) {
+    teamA.push(common);
+    teamB.push(common);
+  }
+
+  shuffle(teamA); shuffle(teamB);
+  const captA = teamA.length? teamA[Math.floor(Math.random()*teamA.length)] : '';
+  const captB = teamB.length? teamB[Math.floor(Math.random()*teamB.length)] : '';
   return {
-    teamA: picked.teamA,
-    teamB: picked.teamB,
+    teamA,
+    teamB,
     captA,
     captB,
-    common: null,
+    common,
     weights: {a: picked.weightA, b: picked.weightB, diff: picked.weightDiff},
-    sizeDiff: picked.sizeDiff
+    sizeDiff: 0
   };
 }
 
