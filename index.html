@@ -4,53 +4,230 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Team Randomizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, -apple-system, Helvetica, Arial; max-width:900px; margin:24px auto; color:#111 }
-    h1 { font-size:20px }
-    textarea { width:100%; min-height:80px }
-    .cols { display:flex; gap:16px; align-items:flex-start }
-    .card { border:1px solid #ddd; padding:12px; border-radius:8px; background:#fff; flex:1 }
-    label { display:block; margin:4px 0 }
-    button { margin-top:8px }
-    .teams { display:flex; gap:16px; margin-top:12px }
-    .team { flex:1; border-radius:8px; padding:12px; border:1px solid #ddd }
-    .common { color:crimson; font-weight:600 }
-    .hint { color:#555; font-size:13px }
+    :root {
+      --bg1: #f2fbf6;
+      --bg2: #dff4e8;
+      --ink: #123028;
+      --muted: #3a5f54;
+      --panel: #ffffff;
+      --line: #cde8da;
+      --accent: #0d9c66;
+      --accent-dark: #0b7f53;
+      --captain: #f59f00;
+      --common: #c2410c;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Sora", "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 15%, rgba(13, 156, 102, 0.16), transparent 35%),
+        radial-gradient(circle at 88% 0%, rgba(9, 107, 74, 0.15), transparent 30%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      padding: 14px;
+    }
+
+    .shell {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.25rem, 4.8vw, 2rem);
+      letter-spacing: 0.02em;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 0.92rem;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--panel);
+      padding: 14px;
+      box-shadow: 0 10px 26px rgba(10, 58, 42, 0.08);
+      animation: rise 380ms ease both;
+    }
+
+    .cols, .teams {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1fr;
+    }
+
+    .section-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+    }
+
+    #playersList {
+      max-height: 46vh;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fbfffd;
+    }
+
+    #playersList label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 6px;
+      border-radius: 8px;
+      margin: 2px 0;
+    }
+
+    #playersList label:hover { background: #effaf4; }
+
+    #playersList input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(180deg, var(--accent), var(--accent-dark));
+      box-shadow: 0 10px 18px rgba(13, 156, 102, 0.3);
+    }
+
+    .btn-ghost {
+      color: var(--ink);
+      background: #eaf8f1;
+      border: 1px solid var(--line);
+    }
+
+    .count-pill {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--accent-dark);
+      margin: 4px 0 2px;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      display: grid;
+      gap: 4px;
+    }
+
+    .captain {
+      color: var(--captain);
+      font-weight: 800;
+    }
+
+    .common {
+      color: var(--common);
+      font-weight: 700;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (min-width: 760px) {
+      body { padding: 24px; }
+      .cols { grid-template-columns: 1.2fr 0.8fr; }
+      .teams { grid-template-columns: 1fr 1fr; }
+      .actions { grid-template-columns: 1fr 1fr; }
+    }
   </style>
 </head>
 <body>
-  <h1>Team Randomizer (Simple)</h1>
-  <p class="hint">Select the players attending from the list below, then click <strong>Generate teams</strong>. Use <strong>Regenerate</strong> to reshuffle teams from the same selected players.</p>
-
-  <div class="cols">
+  <div class="shell">
     <div class="card">
-      <strong>Players (select attending)</strong>
-      <div id="playersList" style="max-height:320px;overflow:auto;margin-top:8px"></div>
-      <div style="margin-top:8px">
-        <button id="selectAll">Select all</button>
-        <button id="clearAll">Clear</button>
+      <h1>Cricket Team Randomizer</h1>
+      <p class="hint">Select attendees, tap <strong>Generate teams</strong>, then tap <strong>Regenerate</strong> to shuffle again with the same players.</p>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <div class="section-title">Players Attending</div>
+        <div id="playersList"></div>
+        <div class="toolbar">
+          <button class="btn-ghost" id="selectAll">Select all</button>
+          <button class="btn-ghost" id="clearAll">Clear</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Session</div>
+        <div class="count-pill" id="selectedCount">0</div>
+        <div class="meta">players selected</div>
+        <div class="meta" id="balanceMeta" style="margin-top:10px">No teams generated yet.</div>
       </div>
     </div>
 
-    <div class="card">
-      <strong>Selected count</strong>
-      <div id="selectedCount" style="font-size:18px;margin-top:8px">0</div>
+    <div class="actions">
+      <button class="btn-primary" id="generate">Generate teams</button>
+      <button class="btn-ghost" id="regen">Regenerate (same players)</button>
     </div>
-  </div>
 
-  <div style="margin-top:12px">
-    <button id="generate">Generate teams</button>
-    <button id="regen">Regenerate (shuffle)</button>
-  </div>
-
-  <div class="teams">
-    <div class="team card">
-      <h3>Team A <span id="captA" style="font-size:12px;color:#666"></span></h3>
-      <ul id="teamA"></ul>
-    </div>
-    <div class="team card">
-      <h3>Team B <span id="captB" style="font-size:12px;color:#666"></span></h3>
-      <ul id="teamB"></ul>
+    <div class="teams">
+      <div class="team card">
+        <h3>Team A <span id="captA" class="meta"></span></h3>
+        <ul id="teamA"></ul>
+      </div>
+      <div class="team card">
+        <h3>Team B <span id="captB" class="meta"></span></h3>
+        <ul id="teamB"></ul>
+      </div>
     </div>
   </div>
 
@@ -245,22 +422,31 @@
     function renderResult(res) {
       const aRoot = document.getElementById('teamA');
       const bRoot = document.getElementById('teamB');
+      const meta = document.getElementById('balanceMeta');
       aRoot.innerHTML = '';
       bRoot.innerHTML = '';
       res.teamA.forEach(p=>{
         const li = document.createElement('li');
-        li.textContent = p + (res.common===p? ' (common)':'');
-        if (p===res.captA) li.style.fontWeight='700';
+        li.textContent = p + (res.common===p ? ' (common)' : '');
+        if (res.common===p) li.classList.add('common');
+        if (p===res.captA) li.classList.add('captain');
         aRoot.appendChild(li);
       });
       res.teamB.forEach(p=>{
         const li = document.createElement('li');
-        li.textContent = p + (res.common===p? ' (common)':'');
-        if (p===res.captB) li.style.fontWeight='700';
+        li.textContent = p + (res.common===p ? ' (common)' : '');
+        if (res.common===p) li.classList.add('common');
+        if (p===res.captB) li.classList.add('captain');
         bRoot.appendChild(li);
       });
       document.getElementById('captA').textContent = res.captA? 'Capt: '+res.captA: '';
       document.getElementById('captB').textContent = res.captB? 'Capt: '+res.captB: '';
+      if (res.weights) {
+        const commonText = res.common ? ` | Common: ${res.common}` : '';
+        meta.textContent = `Weight A: ${res.weights.a} | Weight B: ${res.weights.b} | Diff: ${res.weights.diff}${commonText}`;
+      } else {
+        meta.textContent = res.common ? `Common: ${res.common}` : 'Teams generated.';
+      }
     }
     document.getElementById('selectAll').addEventListener('click', ()=>{
       document.querySelectorAll('#playersList input[type=checkbox]').forEach(b=>b.checked=true);
