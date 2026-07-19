@@ -141,6 +141,18 @@
       border: 1px solid var(--line);
     }
 
+    .btn-yellow {
+      color: #4a2f00;
+      background: linear-gradient(180deg, #ffd84d, #ffc327);
+      border: 1px solid #e2ad00;
+      box-shadow: 0 10px 18px rgba(255, 195, 39, 0.42);
+    }
+
+    #regen {
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
     .count-pill {
       font-size: 1.8rem;
       font-weight: 800;
@@ -216,7 +228,7 @@
 
     <div class="actions">
       <button class="btn-primary" id="generate">Generate teams</button>
-      <button class="btn-ghost" id="regen">Regenerate (same players)</button>
+      <button class="btn-yellow" id="regen">Regenerate (same players)</button>
     </div>
 
     <div class="teams">
@@ -443,12 +455,8 @@
       });
       document.getElementById('captA').textContent = res.captA? 'Capt: '+res.captA: '';
       document.getElementById('captB').textContent = res.captB? 'Capt: '+res.captB: '';
-      if (res.weights) {
-        const commonText = res.common ? ` | Common: ${res.common}` : '';
-        meta.textContent = `Weight A: ${res.weights.a} | Weight B: ${res.weights.b} | Diff: ${res.weights.diff}${commonText}`;
-      } else {
-        meta.textContent = res.common ? `Common: ${res.common}` : 'Teams generated.';
-      }
+      const commonText = res.common ? `Common player: ${res.common}` : 'No common player for this split.';
+      meta.textContent = `${commonText} Common player cannot be captain.`;
     }
     document.getElementById('selectAll').addEventListener('click', ()=>{
       document.querySelectorAll('#playersList input[type=checkbox]').forEach(b=>b.checked=true);
