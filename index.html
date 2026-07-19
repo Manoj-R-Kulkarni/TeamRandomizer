@@ -55,6 +55,17 @@
       font-size: 0.92rem;
     }
 
+    .quote-note {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #ecf9f2;
+      border-left: 4px solid var(--accent);
+      color: #215247;
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
     .card {
       border: 1px solid var(--line);
       border-radius: 18px;
@@ -283,6 +294,7 @@
     <div class="card">
       <h1>Cricket Team Randomizer</h1>
       <p class="hint">Select attendees, tap <strong>Generate teams</strong>, then tap <strong>Regenerate</strong> to shuffle again with the same players.</p>
+      <p class="quote-note" id="captainNote">Loading captain note...</p>
     </div>
 
     <div class="cols">
@@ -562,6 +574,24 @@
       }
     }
 
+    function loadCaptainNote() {
+      const el = document.getElementById('captainNote');
+      return fetch('captain_notes.txt').then(res => {
+        if (!res.ok) throw new Error('captain_notes.txt not found');
+        return res.text();
+      }).then(text => {
+        const lines = text.split('\n').map(x => x.trim()).filter(Boolean);
+        if (!lines.length) {
+          el.textContent = 'Captain says: Keep it simple and play as one team.';
+          return;
+        }
+        const line = lines[Math.floor(Math.random() * lines.length)];
+        el.textContent = line;
+      }).catch(() => {
+        el.textContent = 'Captain says: Keep it simple and play as one team.';
+      });
+    }
+
     function buildPlayerCheckboxes(players) {
       const root = document.getElementById('playersList');
       root.innerHTML = '';
@@ -703,6 +733,7 @@
     });
 
     initToss();
+    loadCaptainNote();
     loadGroups();
   </script>
 </body>
