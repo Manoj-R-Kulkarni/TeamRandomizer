@@ -394,8 +394,50 @@
       }
 
       shuffle(outA); shuffle(outB);
-      const captainPoolA = common ? outA.filter(p => p !== common) : outA;
-      const captainPoolB = common ? outB.filter(p => p !== common) : outB;
+      const nonCommonA = common ? outA.filter(p => p !== common) : outA.slice();
+      const nonCommonB = common ? outB.filter(p => p !== common) : outB.slice();
+
+      // Prefer captains from the same capability group represented in both teams.
+      const countByGroupA = new Map();
+      const countByGroupB = new Map();
+      nonCommonA.forEach(p => {
+        const g = (playerInfo.get(p) || {group:'__ungrouped'}).group;
+        countByGroupA.set(g, (countByGroupA.get(g) || 0) + 1);
+      });
+      nonCommonB.forEach(p => {
+        const g = (playerInfo.get(p) || {group:'__ungrouped'}).group;
+        countByGroupB.set(g, (countByGroupB.get(g) || 0) + 1);
+      });
+
+      const commonGroups = Array.from(countByGroupA.keys()).filter(g => countByGroupB.has(g));
+      let captainPoolA = nonCommonA;
+      let captainPoolB = nonCommonB;
+      let captainGroup = null;
+
+      if (commonGroups.length) {
+        // Pick the strongest shared group by overlap score, random on ties.
+        let bestScore = -1;
+        let bestGroups = [];
+        commonGroups.forEach(g => {
+          const score = Math.min(countByGroupA.get(g) || 0, countByGroupB.get(g) || 0);
+          if (score > bestScore) {
+            bestScore = score;
+            bestGroups = [g];
+          } else if (score === bestScore) {
+            bestGroups.push(g);
+          }
+        });
+        captainGroup = bestGroups[Math.floor(Math.random() * bestGroups.length)];
+        captainPoolA = nonCommonA.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
+        captainPoolB = nonCommonB.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
+
+        if (!captainPoolA.length || !captainPoolB.length) {
+          captainPoolA = nonCommonA;
+          captainPoolB = nonCommonB;
+          captainGroup = null;
+        }
+      }
+
       const captA = captainPoolA.length ? captainPoolA[Math.floor(Math.random()*captainPoolA.length)] : '';
       const captB = captainPoolB.length ? captainPoolB[Math.floor(Math.random()*captainPoolB.length)] : '';
 
@@ -404,6 +446,7 @@
         teamB: outB,
         captA,
         captB,
+        captainGroup,
         common,
         weights: {a: picked.weightA, b: picked.weightB, diff: picked.weightDiff},
         sizeDiff: 0

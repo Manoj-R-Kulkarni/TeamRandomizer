@@ -118,8 +118,47 @@ function generateTeamsFrom(groups, selectedPlayers) {
   }
 
   shuffle(teamA); shuffle(teamB);
-  const captainPoolA = common ? teamA.filter(p => p !== common) : teamA;
-  const captainPoolB = common ? teamB.filter(p => p !== common) : teamB;
+  const nonCommonA = common ? teamA.filter(p => p !== common) : teamA.slice();
+  const nonCommonB = common ? teamB.filter(p => p !== common) : teamB.slice();
+
+  const countByGroupA = new Map();
+  const countByGroupB = new Map();
+  nonCommonA.forEach(p => {
+    const g = (playerInfo.get(p) || {group:'__ungrouped'}).group;
+    countByGroupA.set(g, (countByGroupA.get(g) || 0) + 1);
+  });
+  nonCommonB.forEach(p => {
+    const g = (playerInfo.get(p) || {group:'__ungrouped'}).group;
+    countByGroupB.set(g, (countByGroupB.get(g) || 0) + 1);
+  });
+
+  const commonGroups = Array.from(countByGroupA.keys()).filter(g => countByGroupB.has(g));
+  let captainPoolA = nonCommonA;
+  let captainPoolB = nonCommonB;
+  let captainGroup = null;
+
+  if (commonGroups.length) {
+    let bestScore = -1;
+    let bestGroups = [];
+    commonGroups.forEach(g => {
+      const score = Math.min(countByGroupA.get(g) || 0, countByGroupB.get(g) || 0);
+      if (score > bestScore) {
+        bestScore = score;
+        bestGroups = [g];
+      } else if (score === bestScore) {
+        bestGroups.push(g);
+      }
+    });
+    captainGroup = bestGroups[Math.floor(Math.random() * bestGroups.length)];
+    captainPoolA = nonCommonA.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
+    captainPoolB = nonCommonB.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
+    if (!captainPoolA.length || !captainPoolB.length) {
+      captainPoolA = nonCommonA;
+      captainPoolB = nonCommonB;
+      captainGroup = null;
+    }
+  }
+
   const captA = captainPoolA.length ? captainPoolA[Math.floor(Math.random()*captainPoolA.length)] : '';
   const captB = captainPoolB.length ? captainPoolB[Math.floor(Math.random()*captainPoolB.length)] : '';
   return {
@@ -127,6 +166,7 @@ function generateTeamsFrom(groups, selectedPlayers) {
     teamB,
     captA,
     captB,
+    captainGroup,
     common,
     weights: {a: picked.weightA, b: picked.weightB, diff: picked.weightDiff},
     sizeDiff: 0
@@ -146,6 +186,7 @@ function pickAndRun(n){
   console.log('Captain A:', res.captA);
   console.log('Team B:', res.teamB.join(', '));
   console.log('Captain B:', res.captB);
+  if (res.captainGroup) console.log('Captain group:', res.captainGroup);
   if (res.weights) console.log('Weights A/B/diff:', res.weights.a, res.weights.b, res.weights.diff);
   if (typeof res.sizeDiff === 'number') console.log('Size diff:', res.sizeDiff);
   if (res.common) console.log('Common player (in both):', res.common);
