@@ -260,6 +260,10 @@
         <ul id="teamB"></ul>
       </div>
     </div>
+
+    <div class="card">
+      <div class="meta" id="captainGroupMeta">Captain capability group: -</div>
+    </div>
   </div>
 
   <script>
@@ -462,7 +466,9 @@
         }).then(groups=>{
           window._groups = groups;
           window._allPlayers = uniquePlayers(groups);
-          buildPlayerCheckboxes(window._allPlayers);
+          const shuffledPlayers = window._allPlayers.slice();
+          shuffle(shuffledPlayers);
+          buildPlayerCheckboxes(shuffledPlayers);
         }).catch(e=>{ console.error(e); alert('Could not load groups.json. Add groups.json to repository.'); });
       } catch (e) {
         console.error(e);
@@ -513,6 +519,7 @@
       const aRoot = document.getElementById('teamA');
       const bRoot = document.getElementById('teamB');
       const meta = document.getElementById('balanceMeta');
+      const captainGroupMeta = document.getElementById('captainGroupMeta');
       aRoot.innerHTML = '';
       bRoot.innerHTML = '';
       res.teamA.forEach(p=>{
@@ -533,6 +540,9 @@
       document.getElementById('captB').textContent = res.captB? 'Capt: '+res.captB: '';
       const commonText = res.common ? `Common player: ${res.common}` : 'No common player for this split.';
       meta.textContent = `${commonText} Common player cannot be captain.`;
+      captainGroupMeta.textContent = res.captainGroup
+        ? `Captain capability group: ${res.captainGroup}`
+        : 'Captain capability group: mixed/fallback';
     }
     document.getElementById('selectAll').addEventListener('click', ()=>{
       document.querySelectorAll('#playersList input[type=checkbox]').forEach(b=>b.checked=true);
