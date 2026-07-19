@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Team Randomizer</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Helvetica, Arial; max-width:900px; margin:24px auto; color:#111 }
+    h1 { font-size:20px }
+    textarea { width:100%; min-height:80px }
+    .cols { display:flex; gap:16px; align-items:flex-start }
+    .card { border:1px solid #ddd; padding:12px; border-radius:8px; background:#fff; flex:1 }
+    label { display:block; margin:4px 0 }
+    button { margin-top:8px }
+    .teams { display:flex; gap:16px; margin-top:12px }
+    .team { flex:1; border-radius:8px; padding:12px; border:1px solid #ddd }
+    .common { color:crimson; font-weight:600 }
+    .hint { color:#555; font-size:13px }
+  </style>
+</head>
+<body>
+  <h1>Team Randomizer (Simple)</h1>
+  <p class="hint">Select the players attending from the list below, then click <strong>Generate teams</strong>. Use <strong>Regenerate</strong> to reshuffle teams from the same selected players.</p>
+
+  <div class="cols">
+    <div class="card">
+      <strong>Players (select attending)</strong>
+      <div id="playersList" style="max-height:320px;overflow:auto;margin-top:8px"></div>
+      <div style="margin-top:8px">
+        <button id="selectAll">Select all</button>
+        <button id="clearAll">Clear</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Selected count</strong>
+      <div id="selectedCount" style="font-size:18px;margin-top:8px">0</div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px">
+    <button id="generate">Generate teams</button>
+    <button id="regen">Regenerate (shuffle)</button>
+  </div>
+
+  <div class="teams">
+    <div class="team card">
+      <h3>Team A <span id="captA" style="font-size:12px;color:#666"></span></h3>
+      <ul id="teamA"></ul>
+    </div>
+    <div class="team card">
+      <h3>Team B <span id="captB" style="font-size:12px;color:#666"></span></h3>
+      <ul id="teamB"></ul>
+    </div>
+  </div>
+
+  <script>
+    function uniquePlayers(groups) {
+      const set = new Set();
+      groups.forEach(g=>g.players.forEach(p=>set.add(p)));
+      return Array.from(set);
+    }
+
+    function shuffle(a) { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} }
+
+    function generateTeamsFrom(groups, selectedPlayers) {
+      // Build player -> {group, weight}
+      const playerInfo = new Map();
+      groups.forEach(g=>{
+        const gw = (typeof g.weight === 'number') ? g.weight : 1;
+        g.players.forEach(p=>{
+          if (typeof p === 'string') playerInfo.set(p, {group: g.name||'__g', weight: gw});
+          else if (p && p.name) playerInfo.set(p.name, {group: g.name||'__g', weight: (typeof p.weight==='number'?p.weight:gw)});
+        });
+      });
+
+      // bucket selected players by group
+      const buckets = new Map();
+      selectedPlayers.forEach(p=>{
+        const info = playerInfo.get(p) || {group:'__ungrouped', weight:1};
+        if (!buckets.has(info.group)) buckets.set(info.group, []);
+        buckets.get(info.group).push({name:p, weight: info.weight});
+      });
+
+      const groupsArr = Array.from(buckets.entries());
+
+      // for each group, we must split as evenly as possible: sizes floor/ceil
+      const choicesPerGroup = groupsArr.map(([g, players]) => {
+        const s = players.length;
+        const k1 = Math.floor(s/2);
+        const k2 = s - k1; // ceil
+        // If equal (even), only one size choice; if odd, both orders allowed (which team gets extra)
+        const sizes = (k1===k2) ? [k1] : [k1, k2];
+        return {group: g, players, sizes};
+      });
+
+      let best = null;
+
+      function combinations(arr, k) {
+        const res = [];
+        function rec(start, chosen) {
+          if (chosen.length===k) { res.push(chosen.slice()); return; }
+          for (let i=start;i<arr.length;i++) { chosen.push(arr[i]); rec(i+1, chosen); chosen.pop(); }
+        }
+        rec(0, []);
+        return res;
+      }
+
+      // recursive search across groups
+      function search(idx, teamA, teamB, weightA, weightB) {
+        if (idx===choicesPerGroup.length) {
+          const diff = Math.abs(weightA - weightB);
+          if (!best || diff < best.diff) best = {teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, diff};
+          return;
+        }
+        const {players, sizes} = choicesPerGroup[idx];
+        // for each allowed size for teamA
+        for (const size of sizes) {
+          // generate all combinations of 'size' players from players
+          const combs = combinations(players, size);
+          for (const comb of combs) {
+            const namesA = comb.map(x=>x.name);
+            const namesB = players.filter(p=>!namesA.includes(p.name)).map(x=>x.name);
+            const wA = comb.reduce((s,p)=>s+(p.weight||1),0);
+            const wB = players.reduce((s,p)=>s+(p.weight||1),0) - wA;
+            // proceed
+            teamA.push(...namesA);
+            teamB.push(...namesB);
+            search(idx+1, teamA, teamB, weightA + wA, weightB + wB);
+            // backtrack
+            teamA.splice(teamA.length - namesA.length, namesA.length);
+            teamB.splice(teamB.length - namesB.length, namesB.length);
+          }
+        }
+      }
+
+      search(0, [], [], 0, 0);
+
+      if (!best) return {teamA:[], teamB:[], captA:'', captB:'', common:null};
+
+      // ensure some randomness inside teams
+      shuffle(best.teamA); shuffle(best.teamB);
+      const captA = best.teamA.length? best.teamA[Math.floor(Math.random()*best.teamA.length)] : '';
+      const captB = best.teamB.length? best.teamB[Math.floor(Math.random()*best.teamB.length)] : '';
+
+      return {teamA: best.teamA, teamB: best.teamB, captA, captB, common: null, weights: {a: best.weightA, b: best.weightB}};
+    }
+
+    // Load groups from a hidden JSON file at startup
+    function loadGroups() {
+      try {
+        return fetch('groups.json').then(res=>{
+          if (!res.ok) throw new Error('groups.json not found');
+          return res.json();
+        }).then(groups=>{
+          window._groups = groups;
+          window._allPlayers = uniquePlayers(groups);
+          buildPlayerCheckboxes(window._allPlayers);
+        }).catch(e=>{ console.error(e); alert('Could not load groups.json. Add groups.json to repository.'); });
+      } catch (e) {
+        console.error(e);
+        alert('Could not load groups.json. Add groups.json to repository.');
+      }
+    }
+
+    function buildPlayerCheckboxes(players) {
+      const root = document.getElementById('playersList');
+      root.innerHTML = '';
+      players.forEach(p=>{
+        const id = 'pl_' + p.replace(/\s+/g,'_');
+        const label = document.createElement('label');
+        label.style.display = 'block';
+        label.innerHTML = `<input type=checkbox id="${id}" value="${p}"> ${p}`;
+        root.appendChild(label);
+      });
+      updateSelectedCount();
+      // attach change listeners
+      root.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change', updateSelectedCount));
+    }
+
+    function getSelectedPlayers() {
+      const boxes = Array.from(document.querySelectorAll('#playersList input[type=checkbox]'));
+      return boxes.filter(b=>b.checked).map(b=>b.value);
+    }
+
+    function updateSelectedCount() {
+      const cnt = getSelectedPlayers().length;
+      document.getElementById('selectedCount').textContent = cnt;
+    }
+
+    function renderResult(res) {
+      const aRoot = document.getElementById('teamA');
+      const bRoot = document.getElementById('teamB');
+      aRoot.innerHTML = '';
+      bRoot.innerHTML = '';
+      res.teamA.forEach(p=>{
+        const li = document.createElement('li');
+        li.textContent = p + (res.common===p? ' (common)':'');
+        if (p===res.captA) li.style.fontWeight='700';
+        aRoot.appendChild(li);
+      });
+      res.teamB.forEach(p=>{
+        const li = document.createElement('li');
+        li.textContent = p + (res.common===p? ' (common)':'');
+        if (p===res.captB) li.style.fontWeight='700';
+        bRoot.appendChild(li);
+      });
+      document.getElementById('captA').textContent = res.captA? 'Capt: '+res.captA: '';
+      document.getElementById('captB').textContent = res.captB? 'Capt: '+res.captB: '';
+    }
+    document.getElementById('selectAll').addEventListener('click', ()=>{
+      document.querySelectorAll('#playersList input[type=checkbox]').forEach(b=>b.checked=true);
+      updateSelectedCount();
+    });
+    document.getElementById('clearAll').addEventListener('click', ()=>{
+      document.querySelectorAll('#playersList input[type=checkbox]').forEach(b=>b.checked=false);
+      updateSelectedCount();
+    });
+
+    document.getElementById('generate').addEventListener('click', ()=>{
+      const groups = window._groups || [];
+      const selected = getSelectedPlayers();
+      if (selected.length===0) { alert('Select at least one attending player'); return; }
+      const res = generateTeamsFrom(groups, selected);
+      window._lastResult = {groups, selected, res};
+      renderResult(res);
+    });
+
+    document.getElementById('regen').addEventListener('click', ()=>{
+      if (!window._lastResult) { document.getElementById('generate').click(); return; }
+      const {groups, selected} = window._lastResult;
+      const res = generateTeamsFrom(groups, selected);
+      window._lastResult.res = res;
+      renderResult(res);
+    });
+
+    loadGroups();
+  </script>
+</body>
+</html>
