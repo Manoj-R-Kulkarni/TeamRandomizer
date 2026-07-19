@@ -266,8 +266,24 @@
   <script>
     function uniquePlayers(groups) {
       const set = new Set();
-      groups.forEach(g=>g.players.forEach(p=>set.add(p)));
+      groups.forEach(g=>g.players.forEach(p=>set.add(typeof p === 'string' ? p : p.name)));
       return Array.from(set);
+    }
+
+    function normalizeGroups(raw) {
+      if (Array.isArray(raw)) return raw;
+      // Obfuscated schema: { "players": [{"name":"...","gid":"x1"}] }
+      if (raw && Array.isArray(raw.players)) {
+        const byGroup = new Map();
+        raw.players.forEach((p, idx) => {
+          if (!p || !p.name) return;
+          const gid = p.gid || `g_${idx}`;
+          if (!byGroup.has(gid)) byGroup.set(gid, []);
+          byGroup.get(gid).push(typeof p.weight === 'number' ? {name: p.name, weight: p.weight} : p.name);
+        });
+        return Array.from(byGroup.entries()).map(([gid, players]) => ({name: gid, players}));
+      }
+      return [];
     }
 
     function shuffle(a) { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} }
@@ -460,7 +476,8 @@
         return fetch('groups.json').then(res=>{
           if (!res.ok) throw new Error('groups.json not found');
           return res.json();
-        }).then(groups=>{
+        }).then(raw=>{
+          const groups = normalizeGroups(raw);
           window._groups = groups;
           window._allPlayers = uniquePlayers(groups);
           const shuffledPlayers = window._allPlayers.slice();

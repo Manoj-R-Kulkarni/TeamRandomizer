@@ -4,8 +4,23 @@ function shuffle(a) { for (let i=a.length-1;i>0;i--){const j=Math.floor(Math.ran
 
 function uniquePlayers(groups) {
   const set = new Set();
-  groups.forEach(g=>g.players.forEach(p=>set.add(p)));
+  groups.forEach(g=>g.players.forEach(p=>set.add(typeof p === 'string' ? p : p.name)));
   return Array.from(set);
+}
+
+function normalizeGroups(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.players)) {
+    const byGroup = new Map();
+    raw.players.forEach((p, idx) => {
+      if (!p || !p.name) return;
+      const gid = p.gid || `g_${idx}`;
+      if (!byGroup.has(gid)) byGroup.set(gid, []);
+      byGroup.get(gid).push(typeof p.weight === 'number' ? {name: p.name, weight: p.weight} : p.name);
+    });
+    return Array.from(byGroup.entries()).map(([gid, players]) => ({name: gid, players}));
+  }
+  return [];
 }
 
 function generateTeamsFrom(groups, selectedPlayers) {
@@ -173,7 +188,8 @@ function generateTeamsFrom(groups, selectedPlayers) {
   };
 }
 
-const groups = JSON.parse(fs.readFileSync('./groups.json','utf8'));
+const groupsRaw = JSON.parse(fs.readFileSync('./groups.json','utf8'));
+const groups = normalizeGroups(groupsRaw);
 const all = uniquePlayers(groups);
 console.log('Loaded groups, total unique players:', all.length);
 

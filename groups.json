@@ -1,18 +1,23 @@
-[
-  {
-    "name": "Group1",
-    "players": ["Nikhil L", "Mahesh K", "Mangesh K", "Manoj K"]
-  },
-  {
-    "name": "Group2",
-    "players": ["Prasad B", "Amol D", "Yogesh M", "Sarvesh M", "Vaibhav C"]
-  },
-  {
-    "name": "Group3",
-    "players": ["Manoj D", "Milind K", "Vishnu CA"]
-  },
-  {
-    "name": "Group4",
-    "players": ["Sharad D", "Raoo K", "Milind P"]
-  }
-]
+{
+  "version": 2,
+  "players": [
+    { "name": "Nikhil L", "gid": "k3f9" },
+    { "name": "Mahesh K", "gid": "k3f9" },
+    { "name": "Mangesh K", "gid": "k3f9" },
+    { "name": "Manoj K", "gid": "k3f9" },
+
+    { "name": "Prasad B", "gid": "t8m2" },
+    { "name": "Amol D", "gid": "t8m2" },
+    { "name": "Yogesh M", "gid": "t8m2" },
+    { "name": "Sarvesh M", "gid": "t8m2" },
+    { "name": "Vaibhav C", "gid": "t8m2" },
+
+    { "name": "Manoj D", "gid": "q1z7" },
+    { "name": "Milind K", "gid": "q1z7" },
+    { "name": "Vishnu CA", "gid": "q1z7" },
+
+    { "name": "Sharad D", "gid": "w6p4" },
+    { "name": "Raoo K", "gid": "w6p4" },
+    { "name": "Milind P", "gid": "w6p4" }
+  ]
+}
