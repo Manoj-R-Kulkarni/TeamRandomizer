@@ -490,22 +490,13 @@
       let captainGroup = null;
 
       if (commonGroups.length) {
-        // Pick the strongest shared group by overlap score, random on ties.
-        let bestScore = -1;
-        let bestGroups = [];
-        commonGroups.forEach(g => {
-          const score = Math.min(countByGroupA.get(g) || 0, countByGroupB.get(g) || 0);
-          if (score > bestScore) {
-            bestScore = score;
-            bestGroups = [g];
-          } else if (score === bestScore) {
-            bestGroups.push(g);
-          }
-        });
-        captainGroup = bestGroups[Math.floor(Math.random() * bestGroups.length)];
+        // Give each eligible group a fair, equal chance.
+        // Pick a random group uniformly among groups represented in both teams.
+        captainGroup = commonGroups[Math.floor(Math.random() * commonGroups.length)];
         captainPoolA = nonCommonA.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
         captainPoolB = nonCommonB.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
 
+        // If for some reason one side lacks candidates, fall back to any non-common players.
         if (!captainPoolA.length || !captainPoolB.length) {
           captainPoolA = nonCommonA;
           captainPoolB = nonCommonB;

@@ -153,18 +153,8 @@ function generateTeamsFrom(groups, selectedPlayers) {
   let captainGroup = null;
 
   if (commonGroups.length) {
-    let bestScore = -1;
-    let bestGroups = [];
-    commonGroups.forEach(g => {
-      const score = Math.min(countByGroupA.get(g) || 0, countByGroupB.get(g) || 0);
-      if (score > bestScore) {
-        bestScore = score;
-        bestGroups = [g];
-      } else if (score === bestScore) {
-        bestGroups.push(g);
-      }
-    });
-    captainGroup = bestGroups[Math.floor(Math.random() * bestGroups.length)];
+    // Pick an eligible group uniformly so every group gets a fair chance.
+    captainGroup = commonGroups[Math.floor(Math.random() * commonGroups.length)];
     captainPoolA = nonCommonA.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
     captainPoolB = nonCommonB.filter(p => (playerInfo.get(p) || {group:'__ungrouped'}).group === captainGroup);
     if (!captainPoolA.length || !captainPoolB.length) {
