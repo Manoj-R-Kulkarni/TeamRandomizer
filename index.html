@@ -559,7 +559,9 @@
           el.textContent = 'Captain says: Keep it simple and play as one team.';
           return;
         }
-        const line = lines[Math.floor(Math.random() * lines.length)];
+        let line = lines[Math.floor(Math.random() * lines.length)];
+        // Safety cleanup for any stale/cached old format like "Captain line 123: ..."
+        line = line.replace(/^Captain\s+line\s+\d+\s*:\s*/i, 'Captain says: ');
         el.textContent = line;
       }).catch(() => {
         el.textContent = 'Captain says: Keep it simple and play as one team.';
@@ -573,8 +575,10 @@
       }).then(text => {
         const names = text.split('\n').map(x => x.trim()).filter(Boolean);
         window._teamNames = names;
+        window._teamNamesLoaded = true;
       }).catch(() => {
         window._teamNames = [];
+        window._teamNamesLoaded = false;
       });
     }
 
@@ -697,17 +701,19 @@
       updateSelectedCount();
     });
 
-    document.getElementById('generate').addEventListener('click', ()=>{
+    document.getElementById('generate').addEventListener('click', async ()=>{
       const groups = window._groups || [];
       const selected = getSelectedPlayers();
       if (selected.length===0) { alert('Select at least one attending player'); return; }
+      if (!window._teamNamesLoaded) await loadTeamNames();
       const res = generateTeamsFrom(groups, selected);
       window._lastResult = {groups, selected, res};
       renderResult(res);
     });
 
-    document.getElementById('regen').addEventListener('click', ()=>{
+    document.getElementById('regen').addEventListener('click', async ()=>{
       if (!window._lastResult) { document.getElementById('generate').click(); return; }
+      if (!window._teamNamesLoaded) await loadTeamNames();
       const {groups, selected} = window._lastResult;
       const res = generateTeamsFrom(groups, selected);
       window._lastResult.res = res;
