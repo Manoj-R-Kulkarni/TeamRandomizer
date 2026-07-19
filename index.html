@@ -177,24 +177,6 @@
       font-size: 0.86rem;
     }
 
-    #selectedPlayersList {
-      max-height: 46vh;
-      overflow: auto;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 10px;
-      background: #fbfffd;
-      display: grid;
-      gap: 6px;
-    }
-
-    .selected-item {
-      padding: 6px 8px;
-      border-radius: 8px;
-      background: #effaf4;
-      font-size: 0.9rem;
-    }
-
     h3 {
       margin: 0 0 8px;
       font-size: 1rem;
@@ -283,7 +265,7 @@
 
     @media (min-width: 760px) {
       body { padding: 24px; }
-      .cols { grid-template-columns: 1.2fr 0.8fr; }
+      .cols { grid-template-columns: 1fr; }
       .teams { grid-template-columns: 1fr 1fr; }
       .actions { grid-template-columns: 1fr 1fr; }
     }
@@ -293,7 +275,7 @@
   <div class="shell">
     <div class="card">
       <h1>Cricket Team Randomizer</h1>
-      <p class="hint">Select attendees, tap <strong>Generate teams</strong>, then tap <strong>Regenerate</strong> to shuffle again with the same players.</p>
+      <p class="hint">Select attendees, tap <strong>Generate teams</strong> and <strong>toss</strong> thats it !</p>
       <p class="quote-note" id="captainNote">Loading captain note...</p>
     </div>
 
@@ -307,13 +289,6 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="section-title">Selected Players</div>
-        <div id="selectedPlayersList">
-          <div class="meta">No players selected yet.</div>
-        </div>
-        <div class="meta" id="balanceMeta" style="margin-top:10px">Teams not generated yet.</div>
-      </div>
     </div>
 
     <div class="actions">
@@ -613,28 +588,12 @@
     }
 
     function updateSelectedCount() {
-      const selected = getSelectedPlayers();
-      const root = document.getElementById('selectedPlayersList');
-      root.innerHTML = '';
-      if (!selected.length) {
-        const empty = document.createElement('div');
-        empty.className = 'meta';
-        empty.textContent = 'No players selected yet.';
-        root.appendChild(empty);
-        return;
-      }
-      selected.forEach(name => {
-        const row = document.createElement('div');
-        row.className = 'selected-item';
-        row.textContent = name;
-        root.appendChild(row);
-      });
+      // Kept as a no-op hook since selection listeners reuse this function.
     }
 
     function renderResult(res) {
       const aRoot = document.getElementById('teamA');
       const bRoot = document.getElementById('teamB');
-      const meta = document.getElementById('balanceMeta');
       aRoot.innerHTML = '';
       bRoot.innerHTML = '';
       res.teamA.forEach(p=>{
@@ -653,8 +612,6 @@
       });
       document.getElementById('captA').textContent = res.captA? 'Capt: '+res.captA: '';
       document.getElementById('captB').textContent = res.captB? 'Capt: '+res.captB: '';
-      const commonText = res.common ? `Common player: ${res.common}` : 'No common player for this split.';
-      meta.textContent = `${commonText} Common player cannot be captain.`;
 
       // Enable toss only after teams exist.
       window._tossReady = true;
