@@ -297,11 +297,11 @@
 
     <div class="teams">
       <div class="team card">
-        <h3>Team A <span id="captA" class="meta"></span></h3>
+        <h3><span id="teamNameA">Team A</span> <span id="captA" class="meta"></span></h3>
         <ul id="teamA"></ul>
       </div>
       <div class="team card">
-        <h3>Team B <span id="captB" class="meta"></span></h3>
+        <h3><span id="teamNameB">Team B</span> <span id="captB" class="meta"></span></h3>
         <ul id="teamB"></ul>
       </div>
     </div>
@@ -566,6 +566,25 @@
       });
     }
 
+    function loadTeamNames() {
+      return fetch('team_names_marathi_ancient.txt').then(res => {
+        if (!res.ok) throw new Error('team_names_marathi_ancient.txt not found');
+        return res.text();
+      }).then(text => {
+        const names = text.split('\n').map(x => x.trim()).filter(Boolean);
+        window._teamNames = names;
+      }).catch(() => {
+        window._teamNames = [];
+      });
+    }
+
+    function pickTeamNamePair() {
+      const names = Array.isArray(window._teamNames) ? window._teamNames.slice() : [];
+      if (names.length < 2) return ['Team A', 'Team B'];
+      shuffle(names);
+      return [names[0], names[1]];
+    }
+
     function buildPlayerCheckboxes(players) {
       const root = document.getElementById('playersList');
       root.innerHTML = '';
@@ -593,8 +612,15 @@
     function renderResult(res) {
       const aRoot = document.getElementById('teamA');
       const bRoot = document.getElementById('teamB');
+      const teamNameA = document.getElementById('teamNameA');
+      const teamNameB = document.getElementById('teamNameB');
       aRoot.innerHTML = '';
       bRoot.innerHTML = '';
+
+      const [nameA, nameB] = pickTeamNamePair();
+      teamNameA.textContent = nameA;
+      teamNameB.textContent = nameB;
+
       res.teamA.forEach(p=>{
         const li = document.createElement('li');
         li.textContent = p + (res.common===p ? ' (common)' : '');
@@ -690,6 +716,7 @@
 
     initToss();
     loadCaptainNote();
+    loadTeamNames();
     loadGroups();
   </script>
 </body>
