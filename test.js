@@ -34,7 +34,8 @@ function generateTeamsFrom(groups, selectedPlayers) {
     return {group: g, players, sizes};
   });
 
-  let best = null;
+  let bestScore = Infinity;
+  const bestCandidates = [];
   function combinations(arr, k) {
     const res = [];
     function rec(start, chosen) {
@@ -47,8 +48,16 @@ function generateTeamsFrom(groups, selectedPlayers) {
 
   function search(idx, teamA, teamB, weightA, weightB) {
     if (idx===choicesPerGroup.length) {
-      const diff = Math.abs(weightA - weightB);
-      if (!best || diff < best.diff) best = {teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, diff};
+      const weightDiff = Math.abs(weightA - weightB);
+      const sizeDiff = Math.abs(teamA.length - teamB.length);
+      const score = (weightDiff * 1000) + sizeDiff;
+      if (score < bestScore) {
+        bestScore = score;
+        bestCandidates.length = 0;
+        bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff});
+      } else if (score === bestScore) {
+        bestCandidates.push({teamA: teamA.slice(), teamB: teamB.slice(), weightA, weightB, weightDiff, sizeDiff});
+      }
       return;
     }
     const {players, sizes} = choicesPerGroup[idx];
@@ -69,11 +78,20 @@ function generateTeamsFrom(groups, selectedPlayers) {
   }
 
   search(0, [], [], 0, 0);
-  if (!best) return {teamA:[], teamB:[], captA:'', captB:'', common:null};
-  shuffle(best.teamA); shuffle(best.teamB);
-  const captA = best.teamA.length? best.teamA[Math.floor(Math.random()*best.teamA.length)] : '';
-  const captB = best.teamB.length? best.teamB[Math.floor(Math.random()*best.teamB.length)] : '';
-  return {teamA: best.teamA, teamB: best.teamB, captA, captB, common: null, weights: {a: best.weightA, b: best.weightB}};
+  if (!bestCandidates.length) return {teamA:[], teamB:[], captA:'', captB:'', common:null};
+  const picked = bestCandidates[Math.floor(Math.random() * bestCandidates.length)];
+  shuffle(picked.teamA); shuffle(picked.teamB);
+  const captA = picked.teamA.length? picked.teamA[Math.floor(Math.random()*picked.teamA.length)] : '';
+  const captB = picked.teamB.length? picked.teamB[Math.floor(Math.random()*picked.teamB.length)] : '';
+  return {
+    teamA: picked.teamA,
+    teamB: picked.teamB,
+    captA,
+    captB,
+    common: null,
+    weights: {a: picked.weightA, b: picked.weightB, diff: picked.weightDiff},
+    sizeDiff: picked.sizeDiff
+  };
 }
 
 const groups = JSON.parse(fs.readFileSync('./groups.json','utf8'));
@@ -89,6 +107,8 @@ function pickAndRun(n){
   console.log('Captain A:', res.captA);
   console.log('Team B:', res.teamB.join(', '));
   console.log('Captain B:', res.captB);
+  if (res.weights) console.log('Weights A/B/diff:', res.weights.a, res.weights.b, res.weights.diff);
+  if (typeof res.sizeDiff === 'number') console.log('Size diff:', res.sizeDiff);
   if (res.common) console.log('Common player (in both):', res.common);
 }
 
